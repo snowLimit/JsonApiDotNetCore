@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging.Debug;
 namespace JsonApiDotNetCoreExample
 {
     public class Startup
-    {
+{
         public readonly IConfiguration Config;
 
         public Startup(IWebHostEnvironment env)
