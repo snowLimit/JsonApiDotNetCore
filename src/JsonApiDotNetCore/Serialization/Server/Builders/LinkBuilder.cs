@@ -109,8 +109,7 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
                 builder.Append(_currentRequest.RequestRelationship.PublicRelationshipName);
             }
 
-            var queryString = QueryString.Create(_queryStringAccessor.Query).ToString();
-            builder.Append(queryString);
+            builder.Append(QueryString.Create(_queryStringAccessor.Query).ToString());
 
             return builder.ToString();
         }
