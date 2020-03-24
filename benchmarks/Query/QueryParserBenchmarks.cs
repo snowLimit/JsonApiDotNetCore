@@ -14,14 +14,14 @@ namespace Benchmarks.Query
     [MarkdownExporter, SimpleJob(launchCount: 3, warmupCount: 10, targetCount: 20), MemoryDiagnoser]
     public class QueryParserBenchmarks
     {
-        private readonly QueryParameterDiscovery _queryParameterDiscoveryForSort;
-        private readonly QueryParameterDiscovery _queryParameterDiscoveryForAll;
+        private readonly QueryParameterParser _queryParameterDiscoveryForSort;
+        private readonly QueryParameterParser _queryParameterDiscoveryForAll;
 
         public QueryParserBenchmarks()
         {
             IJsonApiOptions options = new JsonApiOptions();
             IResourceGraph resourceGraph = DependencyFactory.CreateResourceGraph();
-            
+
             var currentRequest = new CurrentRequest();
             currentRequest.SetRequestResource(resourceGraph.GetResourceContext(typeof(BenchmarkResource)));
 
@@ -31,7 +31,7 @@ namespace Benchmarks.Query
             _queryParameterDiscoveryForAll = CreateQueryParameterDiscoveryForAll(resourceGraph, currentRequest, resourceDefinitionProvider, options);
         }
 
-        private static QueryParameterDiscovery CreateQueryParameterDiscoveryForSort(IResourceGraph resourceGraph,
+        private static QueryParameterParser CreateQueryParameterDiscoveryForSort(IResourceGraph resourceGraph,
             CurrentRequest currentRequest, IResourceDefinitionProvider resourceDefinitionProvider, IJsonApiOptions options)
         {
             ISortService sortService = new SortService(resourceDefinitionProvider, resourceGraph, currentRequest);
@@ -41,10 +41,10 @@ namespace Benchmarks.Query
                 sortService
             };
 
-            return new QueryParameterDiscovery(options, queryServices);
+            return new QueryParameterParser(options, queryServices);
         }
 
-        private static QueryParameterDiscovery CreateQueryParameterDiscoveryForAll(IResourceGraph resourceGraph,
+        private static QueryParameterParser CreateQueryParameterDiscoveryForAll(IResourceGraph resourceGraph,
             CurrentRequest currentRequest, IResourceDefinitionProvider resourceDefinitionProvider, IJsonApiOptions options)
         {
             IIncludeService includeService = new IncludeService(resourceGraph, currentRequest);
@@ -61,7 +61,7 @@ namespace Benchmarks.Query
                 omitNullService
             };
 
-            return new QueryParameterDiscovery(options, queryServices);
+            return new QueryParameterParser(options, queryServices);
         }
 
         [Benchmark]
@@ -92,7 +92,8 @@ namespace Benchmarks.Query
             }
         ), null));
 
-        private void Run(int iterations, Action action) { 
+        private void Run(int iterations, Action action)
+        {
             for (int i = 0; i < iterations; i++)
                 action();
         }

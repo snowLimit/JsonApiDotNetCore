@@ -17,7 +17,7 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
     public class LinkBuilder : ILinkBuilder
     {
         private readonly IResourceContextProvider _provider;
-        private readonly IRequestQueryStringAccessor _queryStringAccessor;
+        private readonly IQueryCollectionAccessor _queryStringAccessor;
         private readonly ILinksConfiguration _options;
         private readonly ICurrentRequest _currentRequest;
         private readonly IPageService _pageService;
@@ -26,7 +26,7 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
                            ICurrentRequest currentRequest,
                            IPageService pageService,
                            IResourceContextProvider provider,
-                           IRequestQueryStringAccessor queryStringAccessor)
+                           IQueryCollectionAccessor queryStringAccessor)
         {
             _options = options;
             _currentRequest = currentRequest;
@@ -109,7 +109,8 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
                 builder.Append(_currentRequest.RequestRelationship.PublicRelationshipName);
             }
 
-            builder.Append(_queryStringAccessor.QueryString.Value);
+            var queryString = QueryString.Create(_queryStringAccessor.Query).ToString();
+            builder.Append(queryString);
 
             return builder.ToString();
         }

@@ -8,13 +8,15 @@ using Microsoft.AspNetCore.Http;
 
 namespace JsonApiDotNetCore.Services
 {
+
     /// <inheritdoc/>
-    public class QueryParameterDiscovery : IQueryParameterDiscovery
+    public class QueryParameterParser : IQueryParameterParser
     {
+        public IQueryCollection Query { get; set; } = QueryCollection.Empty;
         private readonly IJsonApiOptions _options;
         private readonly IEnumerable<IQueryParameterService> _queryServices;
 
-        public QueryParameterDiscovery(IJsonApiOptions options, IEnumerable<IQueryParameterService> queryServices)
+        public QueryParameterParser(IJsonApiOptions options, IEnumerable<IQueryParameterService> queryServices)
         {
             _options = options;
             _queryServices = queryServices;
@@ -27,6 +29,7 @@ namespace JsonApiDotNetCore.Services
         /// </summary>
         public virtual void Parse(IQueryCollection query, DisableQueryAttribute disabled)
         {
+            Query = query;
             var disabledQuery = disabled?.QueryParams;
 
             foreach (var pair in query)
@@ -37,16 +40,22 @@ namespace JsonApiDotNetCore.Services
                     if (pair.Key.ToLower().StartsWith(service.Name, StringComparison.Ordinal))
                     {
                         if (disabledQuery == null || !IsDisabled(disabledQuery, service))
+                        {
                             service.Parse(pair);
+                        }
                         parsed = true;
                         break;
                     }
                 }
                 if (parsed)
+                {
                     continue;
+                }
 
                 if (!_options.AllowCustomQueryParameters)
+                {
                     throw new JsonApiException(400, $"{pair} is not a valid query.");
+                }
             }
         }
 

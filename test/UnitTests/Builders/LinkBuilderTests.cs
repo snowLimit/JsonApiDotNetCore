@@ -20,7 +20,7 @@ namespace UnitTests
     {
         private readonly IPageService _pageService;
         private readonly Mock<IResourceGraph> _provider = new Mock<IResourceGraph>();
-        private readonly IRequestQueryStringAccessor _queryStringAccessor = new FakeRequestQueryStringAccessor("?foo=bar");
+        private readonly IQueryCollectionAccessor _queryStringAccessor = new FakeRequestQueryStringAccessor("?foo=bar");
         private const string _host = "http://www.example.com";
         private const int _baseId = 123;
         private const string _relationshipName = "author";
@@ -236,7 +236,7 @@ namespace UnitTests
             };
         }
 
-        private sealed class FakeRequestQueryStringAccessor : IRequestQueryStringAccessor
+        private sealed class FakeRequestQueryStringAccessor : IQueryCollectionAccessor
         {
             public QueryString QueryString { get; }
             public IQueryCollection Query { get; }
