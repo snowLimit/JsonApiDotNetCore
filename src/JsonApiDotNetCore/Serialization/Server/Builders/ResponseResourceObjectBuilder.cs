@@ -51,95 +51,58 @@ namespace JsonApiDotNetCore.Serialization.Server {
             RelationshipEntry relationshipEntry = null;
             List<List<RelationshipAttribute>> relationshipChains = null;
 
-            // just to set the basic relationship-data array
-            relationshipEntry = base.GetRelationshipData(relationship, entity);
-
-            // login params
-            LogParams(relationship, entity, relationshipEntry);
-
             var pi = relationship.PropertyInfo;
+            LogProperties(entity);
+            LogAllowedRelationships(entity);
 
-            // check if collection. (HasManyAttribute) string also counts as collection so 
-            if (pi.IsNonStringEnumerable()) {
-                _logger.LogWarning("-- is a collection");
+            // i really don't know why i checked if this is a collection? this can't be a collection wtf
+            if (relationship is HasOneAttribute hasOneAttribute) {
+                _logger.LogInformation("-- is hasOneAttribute");
 
-                LogProperties(entity);
-                LogAllowedRelationships(entity);
-
-              
-                //relationshipChains = new List<List<RelationshipAttribute>> { allowedRelations };
-                //_includedBuilder.GetIncluded().Add(allowedRelations[0]);
-
-                var hasManyAttribute = (HasManyAttribute)relationship;
-                _logger.LogInformation("-- public HasManyName: {0}", hasManyAttribute.PublicRelationshipName);
-                _logger.LogWarning("-- does this work? {0}", hasManyAttribute);
-
-                //relationshipEntry.ManyData = new List<ResourceIdentifierObject> {
-                //    new ResourceIdentifierObject { Id = "sven", Type = "sven" },
-                //    new ResourceIdentifierObject { Id = "sven", Type = "sven" },
-                //};
-
-            } else { // only for single toOne
-                LogPropertyInfos(pi);
+                relationshipEntry = base.GetRelationshipData(relationship, entity);
 
                 var id = entity.GetPropValue(string.Concat(pi.PropertyType.Name, "Id"));
                 relationshipEntry.Data = new ResourceIdentifierObject {
                     Id = id.ToString(),
                     Type = relationship.PublicRelationshipName
                 };
+            } else if (relationship is HasManyAttribute hasManyAttribute) {
+                _logger.LogInformation("-- is hasManyAttribute");
+                relationshipEntry = base.GetRelationshipData(relationship, entity);
+            } else {
+                _logger.LogWarning("-- shouldn't be this, maybe its null: {0}", relationship);
             }
 
+            if (Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains)) {
+                _logger.LogInformation("!! first step");
+                relationshipEntry = base.GetRelationshipData(relationship, entity);
 
-            ShouldInclude(relationship, out relationshipChains);
-            if (true || Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains)) {
-                if (true || (relationshipChains != null && relationshipEntry.HasResource)) {
-                    LogAfterIfCheck(relationshipEntry, relationshipChains);
-
-                    // just cheating
-                    var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(entity.GetType());
-                    relationshipChains = new List<List<RelationshipAttribute>>();
-                    relationshipChains.Add(allowedRelations);
-                    _logger.LogWarning("-- relationshipChains.Count {0}", relationshipChains.Count);
-
-                    var fieldsRelations = _fieldsToSerialize.GetAllowedRelationships(entity.GetType());
-                    _includedBuilder.IncludeRelationshipChain(fieldsRelations, entity);
-                    //foreach (var chain in relationshipChains) {
-                    //    LogChainAndChildren(relationshipChains, chain);
-
-                    //    foreach (var item in chain) {
-                    //        _logger.LogCritical("-- item in Chain Properties");
-                    //        LogProperties(item);
-                    //    }
-                    //    var fieldsRelations = _fieldsToSerialize.GetAllowedRelationships(entity.GetType());
-                    //    foreach (var item in fieldsRelations) {
-                    //        _logger.LogCritical("-- item in Allowed Properties");
-                    //        LogProperties(item);
-                    //    }
-                    //    var isEqual = chain.First().Equals(fieldsRelations.First());
-                    //    _logger.LogError("isEqual? {0}", isEqual);
-
-
-                    //    // traverses (recursively) and extracts all (nested) related entities for the current inclusion chain.
-                    //    _includedBuilder.IncludeRelationshipChain(fieldsRelations, entity);
-                    //}
+                if ((relationshipChains != null && relationshipEntry.HasResource)) {
+                    _logger.LogInformation("!! second step");
+                    foreach (var chain in relationshipChains) {
+                        // traverses (recursively) and extracts all (nested) related entities for the current inclusion chain.
+                        _includedBuilder.IncludeRelationshipChain(chain, entity);
+                    }
                 }
             }
-
-            var attrs = _includedBuilder.GetIncluded()
-                  .First().Attributes
-                  .Select(x => $"{x.Key} - {x.Value}").Join("\n");
-            _logger.LogInformation("\nAttributes of included:\n{0}\n", attrs);
 
             var links = _linkBuilder.GetRelationshipLinks(relationship, entity);
             if (links != null)
                 // if links relationshipLinks should be built for this entry, populate the "links" field.
                 (relationshipEntry ??= new RelationshipEntry()).Links = links;
 
-            _includedBuilder.RemoveAllIncluded();
-
             // if neither "links" nor "data" was populated, return null, which will omit this entry from the output.
             // (see the NullValueHandling settings on <see cref="ResourceObject"/>)
             return relationshipEntry;
+        }
+
+        private void LogAttributes() {
+            if (_includedBuilder.GetIncluded()?.Count == 0) return;
+
+            var attrs = _includedBuilder.GetIncluded()
+                              .First().Attributes
+                              .Select(x => $"{x.Key} - {x.Value}").Join("\n");
+            _logger.LogInformation("\nAttributes of included:\n{0}\n", attrs);
         }
 
         private void LogChainAndChildren(List<List<RelationshipAttribute>> relationshipChains, List<RelationshipAttribute> chain) {
