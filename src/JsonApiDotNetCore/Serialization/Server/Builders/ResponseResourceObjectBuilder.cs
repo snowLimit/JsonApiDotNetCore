@@ -51,9 +51,6 @@ namespace JsonApiDotNetCore.Serialization.Server {
             RelationshipEntry relationshipEntry = null;
             List<List<RelationshipAttribute>> relationshipChains = null;
 
-            LogProperties(entity);
-            LogAllowedRelationships(entity);
-
             relationshipEntry = base.GetRelationshipData(relationship, entity);
 
             if (Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains)) {
@@ -75,19 +72,6 @@ namespace JsonApiDotNetCore.Serialization.Server {
             return relationshipEntry;
         }
 
-        private void LogAllowedRelationships(IIdentifiable entity) {
-            var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(entity.GetType());
-            var relOutput = allowedRelations.Select(x => x.PublicRelationshipName).Join("\n");
-            _logger.LogInformation("\nAllowedRelationships:\n{0}\n", relOutput);
-        }
-
-        private void LogProperties(object entity) {
-            var output = entity.GetType().GetProperties()
-                                .Select(x => $"{x.Name} - {entity.GetPropValue(x.Name)}")
-                                .Join("\n");
-            _logger.LogInformation("\nProperties:\n{0}\n", output);
-        }
-
         /// <summary>
         /// Inspects the included relationship chains (see <see cref="IIncludeService"/>
         /// to see if <paramref name="relationship"/> should be included or not.
@@ -98,47 +82,4 @@ namespace JsonApiDotNetCore.Serialization.Server {
         }
     }
 
-    static class MyExtensions {
-
-        public static string FirstCharToUpper(this string input) {
-            if (string.IsNullOrEmpty(input))
-                throw new ArgumentException("ARGH!");
-            return input.First().ToString().ToUpper() + input.Substring(1);
-        }
-
-        public static bool IsNonStringEnumerable(this PropertyInfo pi) {
-            return pi != null && pi.PropertyType.IsNonStringEnumerable();
-        }
-
-        public static bool IsNonStringEnumerable(this object instance) {
-            return instance != null && instance.GetType().IsNonStringEnumerable();
-        }
-
-        public static bool IsNonStringEnumerable(this Type type) {
-            if (type == null || type == typeof(string))
-                return false;
-            return typeof(IEnumerable).IsAssignableFrom(type);
-        }
-
-        public static object GetPropValue(this object obj, string name) {
-            foreach (string part in name.Split('.')) {
-                if (obj == null) { return null; }
-
-                Type type = obj.GetType();
-                PropertyInfo info = type.GetProperty(part);
-                if (info == null) { return null; }
-
-                obj = info.GetValue(obj, null);
-            }
-            return obj;
-        }
-
-        public static T GetPropValue<T>(this object obj, string name) {
-            object retval = GetPropValue(obj, name);
-            if (retval == null) { return default; }
-
-            // throws InvalidCastException if types are incompatible
-            return (T)retval;
-        }
-    }
 }

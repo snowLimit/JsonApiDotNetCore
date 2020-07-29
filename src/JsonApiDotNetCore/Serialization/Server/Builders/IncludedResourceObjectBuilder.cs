@@ -25,15 +25,6 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
             _linkBuilder = linkBuilder;
         }
 
-
-        public HashSet<ResourceObject> GetIncluded() {
-            return _included;
-        }
-
-        public void RemoveAllIncluded() {
-            _included.Clear();
-        }
-
         /// <inheritdoc/>
         public List<ResourceObject> Build()
         {

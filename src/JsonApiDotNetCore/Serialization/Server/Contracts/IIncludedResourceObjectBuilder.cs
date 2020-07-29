@@ -10,10 +10,6 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
         /// </summary>
         List<ResourceObject> Build();
 
-        void RemoveAllIncluded();
-
-        HashSet<ResourceObject> GetIncluded();
-
                     
         /// <summary>
         /// Extracts the included entities from <paramref name="rootEntity"/> using the
