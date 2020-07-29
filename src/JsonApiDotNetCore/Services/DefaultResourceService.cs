@@ -294,7 +294,13 @@ namespace JsonApiDotNetCore.Services {
             var type = entities.ElementType;
             var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(type);
             var chains = _includeService.Get();
-            chains = new List<List<RelationshipAttribute>> { allowedRelations };
+            chains = new List<List<RelationshipAttribute>>();
+
+            foreach (var relation in allowedRelations) {
+                // add each allowedRelation to single list because then they get treated separately.
+                // otherwise it would get treated as a follow-up relation
+                chains.Add(new List<RelationshipAttribute> { relation });
+            }
 
             if (chainPrefix != null) {
                 chains.Add(new List<RelationshipAttribute>());

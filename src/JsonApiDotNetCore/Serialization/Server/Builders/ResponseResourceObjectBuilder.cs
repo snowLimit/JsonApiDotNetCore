@@ -51,34 +51,13 @@ namespace JsonApiDotNetCore.Serialization.Server {
             RelationshipEntry relationshipEntry = null;
             List<List<RelationshipAttribute>> relationshipChains = null;
 
-            var pi = relationship.PropertyInfo;
             LogProperties(entity);
             LogAllowedRelationships(entity);
 
-            // i really don't know why i checked if this is a collection? this can't be a collection wtf
-            if (relationship is HasOneAttribute hasOneAttribute) {
-                _logger.LogInformation("-- is hasOneAttribute");
-
-                relationshipEntry = base.GetRelationshipData(relationship, entity);
-
-                var id = entity.GetPropValue(string.Concat(pi.PropertyType.Name, "Id"));
-                relationshipEntry.Data = new ResourceIdentifierObject {
-                    Id = id.ToString(),
-                    Type = relationship.PublicRelationshipName
-                };
-            } else if (relationship is HasManyAttribute hasManyAttribute) {
-                _logger.LogInformation("-- is hasManyAttribute");
-                relationshipEntry = base.GetRelationshipData(relationship, entity);
-            } else {
-                _logger.LogWarning("-- shouldn't be this, maybe its null: {0}", relationship);
-            }
+            relationshipEntry = base.GetRelationshipData(relationship, entity);
 
             if (Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains)) {
-                _logger.LogInformation("!! first step");
-                relationshipEntry = base.GetRelationshipData(relationship, entity);
-
                 if ((relationshipChains != null && relationshipEntry.HasResource)) {
-                    _logger.LogInformation("!! second step");
                     foreach (var chain in relationshipChains) {
                         // traverses (recursively) and extracts all (nested) related entities for the current inclusion chain.
                         _includedBuilder.IncludeRelationshipChain(chain, entity);
@@ -96,53 +75,17 @@ namespace JsonApiDotNetCore.Serialization.Server {
             return relationshipEntry;
         }
 
-        private void LogAttributes() {
-            if (_includedBuilder.GetIncluded()?.Count == 0) return;
-
-            var attrs = _includedBuilder.GetIncluded()
-                              .First().Attributes
-                              .Select(x => $"{x.Key} - {x.Value}").Join("\n");
-            _logger.LogInformation("\nAttributes of included:\n{0}\n", attrs);
-        }
-
-        private void LogChainAndChildren(List<List<RelationshipAttribute>> relationshipChains, List<RelationshipAttribute> chain) {
-            _logger.LogWarning("-- chain ({0}) in relationship: {1}", relationshipChains.IndexOf(chain), chain);
-
-            foreach (var item in chain) {
-                _logger.LogWarning("-- item ({0}) in chain: {1}", chain.IndexOf(item), item);
-            }
-        }
-
-        private void LogAfterIfCheck(RelationshipEntry relationshipEntry, List<List<RelationshipAttribute>> relationshipChains) {
-            _logger.LogWarning("-- passed the if check: {0}, relationship != null: {1}, hasResource: {2}",
-                                    relationshipChains != null && relationshipEntry.HasResource, relationshipChains != null,
-                                    relationshipEntry.HasResource);
-        }
-
-        private void LogPropertyInfos(PropertyInfo pi) {
-            _logger.LogInformation("-- propInfo: {0}", pi);
-            _logger.LogInformation("-- propInfoName: {0}", pi.Name);
-            _logger.LogInformation("-- propInfoType: {0}", pi.PropertyType);
-            _logger.LogInformation("-- propInfoTypeName: {0}", pi.PropertyType.Name);
-        }
-
         private void LogAllowedRelationships(IIdentifiable entity) {
             var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(entity.GetType());
             var relOutput = allowedRelations.Select(x => x.PublicRelationshipName).Join("\n");
-            _logger.LogInformation("\n{0}\n", relOutput);
+            _logger.LogInformation("\nAllowedRelationships:\n{0}\n", relOutput);
         }
 
         private void LogProperties(object entity) {
             var output = entity.GetType().GetProperties()
                                 .Select(x => $"{x.Name} - {entity.GetPropValue(x.Name)}")
                                 .Join("\n");
-            _logger.LogInformation("\n{0}\n", output);
-        }
-
-        private void LogParams(RelationshipAttribute relationship, IIdentifiable entity, RelationshipEntry relationshipEntry) {
-            _logger.LogCritical("-- GetRelationshipData()");
-            _logger.LogWarning("-- \nParams: \n relationship: {0}\n entity: {1}\n _requestRelationship: {2}\n relationshipEntry: {3}",
-                relationship, entity, _requestRelationship, relationshipEntry);
+            _logger.LogInformation("\nProperties:\n{0}\n", output);
         }
 
         /// <summary>
