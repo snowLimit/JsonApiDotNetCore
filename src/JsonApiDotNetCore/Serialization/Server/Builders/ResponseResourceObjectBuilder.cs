@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Security.Cryptography.X509Certificates;
 using JsonApiDotNetCore.Extensions;
 using JsonApiDotNetCore.Internal.Contracts;
 using JsonApiDotNetCore.Models;
@@ -53,9 +55,36 @@ namespace JsonApiDotNetCore.Serialization.Server {
 
             relationshipEntry = base.GetRelationshipData(relationship, entity);
 
-            if (Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains)) {
-                if ((relationshipChains != null && relationshipEntry.HasResource)) {
-                    foreach (var chain in relationshipChains) {
+            // sven
+            if (Equals(relationship, _requestRelationship) || ShouldInclude(relationship, out relationshipChains) || true) {
+                if (relationshipChains != null && relationshipChains.Count != 0 && relationshipEntry.HasResource) {
+
+                    // sven
+                    //if (relationshipChains.Count == 0) {
+                    //    relationshipChains = _fieldsToSerialize.GetAllowedRelationships(relationship.RightType)
+                    //        .Select(x => new List<RelationshipAttribute> { x }).ToList();
+                    //}
+
+                    // every chain in relationshipChains has the same on first position = the relationship requested
+                    var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(relationship.RightType);
+                    //var fakeChains = relationshipChains.ToList();
+                    var fakeChains = new List<List<RelationshipAttribute>>();
+
+                    var singleOneIndex = fakeChains.FindIndex(x => x.Count == 1 && x.First().Equals(relationship));
+                    if (singleOneIndex != -1) {
+                        fakeChains.RemoveAt(singleOneIndex);
+                    }
+
+                    foreach (var relation in allowedRelations) {
+                        bool isIncluded = fakeChains.Any(x => x.Last().Equals(relation));
+                        if (! isIncluded) {
+                            var subList = new List<RelationshipAttribute> { relationship, relation };
+                            fakeChains.Add(subList);
+                        }
+                    }
+
+                    // sven
+                    foreach (var chain in fakeChains) {
                         // traverses (recursively) and extracts all (nested) related entities for the current inclusion chain.
                         _includedBuilder.IncludeRelationshipChain(chain, entity);
                     }
@@ -63,9 +92,11 @@ namespace JsonApiDotNetCore.Serialization.Server {
             }
 
             var links = _linkBuilder.GetRelationshipLinks(relationship, entity);
-            if (links != null)
-                // if links relationshipLinks should be built for this entry, populate the "links" field.
-                (relationshipEntry ??= new RelationshipEntry()).Links = links;
+            // sven
+            // omit links everytime
+            //if (links != null)
+            //    // if links relationshipLinks should be built for this entry, populate the "links" field.
+            //    (relationshipEntry ??= new RelationshipEntry()).Links = links;
 
             // if neither "links" nor "data" was populated, return null, which will omit this entry from the output.
             // (see the NullValueHandling settings on <see cref="ResourceObject"/>)

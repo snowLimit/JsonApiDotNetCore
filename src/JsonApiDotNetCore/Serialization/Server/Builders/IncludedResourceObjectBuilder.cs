@@ -39,7 +39,8 @@ namespace JsonApiDotNetCore.Serialization.Server.Builders
                         if (!pruned.Any()) pruned = null;
                         resourceObject.Relationships = pruned;
                     }
-                    resourceObject.Links = _linkBuilder.GetResourceLinks(resourceObject.Type, resourceObject.Id);
+                    // sven omit links
+                    //resourceObject.Links = _linkBuilder.GetResourceLinks(resourceObject.Type, resourceObject.Id);
                 }
                 return _included.ToList();
             }

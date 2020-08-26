@@ -294,19 +294,30 @@ namespace JsonApiDotNetCore.Services {
             var type = entities.ElementType;
             var allowedRelations = _fieldsToSerialize.GetAllowedRelationships(type);
             var chains = _includeService.Get();
-            chains = new List<List<RelationshipAttribute>>();
+            var fakeChains = chains.ToList();
 
+            // sven
+            // loop through and only add missing ones
             foreach (var relation in allowedRelations) {
                 // add each allowedRelation to single list because then they get treated separately.
                 // otherwise it would get treated as a follow-up relation
-                chains.Add(new List<RelationshipAttribute> { relation });
+                bool isIncluded = fakeChains.Select(x => x.First()).Any(x => x.Equals(relation));
+                if (! isIncluded) {
+                    var subList = new List<RelationshipAttribute> { relation };
+                    //var relationType = relation.RightType;
+                    //var subAllowed = _fieldsToSerialize.GetAllowedRelationships(relationType);
+
+                    //subList.AddRange(subAllowed);
+                    fakeChains.Add(subList);
+                }
             }
 
             if (chainPrefix != null) {
                 chains.Add(new List<RelationshipAttribute>());
             }
 
-            foreach (var inclusionChain in chains) {
+            // sven
+            foreach (var inclusionChain in fakeChains) {
                 if (chainPrefix != null) {
                     inclusionChain.Insert(0, chainPrefix);
                 }

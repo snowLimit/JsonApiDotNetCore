@@ -95,8 +95,9 @@ namespace JsonApiDotNetCore.Serialization.Server
             var (attributes, relationships) = GetFieldsToSerialize();
             var document = Build(entity, attributes, relationships);
             var resourceObject = document.SingleData;
-            if (resourceObject != null)
-                resourceObject.Links = _linkBuilder.GetResourceLinks(resourceObject.Type, resourceObject.Id);
+            // sven omit links
+            //if (resourceObject != null)
+            //resourceObject.Links = _linkBuilder.GetResourceLinks(resourceObject.Type, resourceObject.Id);
 
             AddTopLevelObjects(document);
 
@@ -120,11 +121,12 @@ namespace JsonApiDotNetCore.Serialization.Server
             var document = Build(entities, attributes, relationships);
             foreach (ResourceObject resourceObject in document.ManyData)
             {
+                // sven omit links
                 var links = _linkBuilder.GetResourceLinks(resourceObject.Type, resourceObject.Id);
                 if (links == null)
                     break;
 
-                resourceObject.Links = links;
+                //resourceObject.Links = links;
             }
 
             AddTopLevelObjects(document);
@@ -179,7 +181,8 @@ namespace JsonApiDotNetCore.Serialization.Server
         /// </summary>
         private void AddTopLevelObjects(Document document)
         {
-            document.Links = _linkBuilder.GetTopLevelLinks();
+            // sven omit links
+            //document.Links = _linkBuilder.GetTopLevelLinks();
             document.Meta = _metaBuilder.GetMeta();
             document.Included = _includedBuilder.Build();
         }
